@@ -36,7 +36,7 @@ st.header(f"🔬 {antibiotic} Resistance")
 col1, col2 = st.columns([4, 2])
 
 with col1:
-    img_chart = alt.Chart(filtered_df).mark_image(
+    img_chart = alt.Chart(filtered_df).mark_image(
     width=24,
     height=40
 ).encode(
