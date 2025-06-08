@@ -52,12 +52,13 @@ st.markdown(f"Which bacteria are most resistant to **{antibiotic}**?")
 col1, col2 = st.columns([4, 2])
 
 with col1:
+    # Base chart with tooltip and sorting
     base = alt.Chart(filtered_df).encode(
         y=alt.Y("Bacteria:N", sort=f"-x"),
         tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
     )
 
-    # Rounded bar ("tube") body
+    # Rounded horizontal bars = "test tubes"
     bars = base.mark_bar(
         size=20,
         cornerRadiusTopLeft=6,
@@ -71,9 +72,11 @@ with col1:
         color=alt.Color("Gram_Staining:N", legend=alt.Legend(title="Gram Staining"))
     )
 
-    # White “neck” at top of bar
-    necks = base.mark_bar(
-        size=6,
+    # "Neck" of test tube = white dot on bar end
+    necks = base.mark_point(
+        shape="circle",
+        filled=True,
+        size=60,
         color="white"
     ).encode(
         x=alt.X(
@@ -82,15 +85,29 @@ with col1:
         )
     )
 
-    # ECOFF line
+    # ECOFF dashed line
     rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
         strokeDash=[5, 5], color='black'
     ).encode(
         x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
     )
 
-    chart1 = alt.layer(bars, necks, rule).properties(width=600, height=450).interactive()
+    chart1 = alt.layer(bars, necks, rule).properties(width=650, height=500).interactive()
     st.altair_chart(chart1)
+
+with col2:
+    st.markdown("""
+    ### 🧪 How to Read This Chart
+
+    - The **x-axis** uses a **logarithmic scale** to better display the wide range of MIC values.
+    - **Each bar** represents one bacterium's resistance to the selected antibiotic.
+    - The **white circle** at the end of each bar simulates the "neck" of a **test tube**.
+    - The **dashed vertical line** shows an ECOFF threshold of **1 μg/mL**:
+        - To the left = generally **susceptible**
+        - To the right = potentially **resistant**
+    """)
+
+
 
 with col2:
     st.markdown("""
