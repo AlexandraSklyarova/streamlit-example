@@ -37,14 +37,15 @@ col1, col2 = st.columns([4, 2])
 
 with col1:
     img_chart = alt.Chart(filtered_df).mark_image(
-        width=24,
-        height=40
-    ).encode(
-        x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type='log', base=10), title="MIC (μg/mL, log scale)"),
-        y=alt.Y("Bacteria:N", sort="-x"),
-        url="icon:N",
-        tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
-    ).properties(width=700, height=500)
+    width=24,
+    height=40
+).encode(
+    x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type='log', base=10), title="MIC (μg/mL, log scale)"),
+    y=alt.Y("Bacteria:N", sort="-x"),
+    url="icon:N",
+    tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
+).properties(width=700, height=500)
+
 
     rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
         strokeDash=[5, 5], color='black'
