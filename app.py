@@ -39,37 +39,43 @@ genus_options = st.multiselect("Select Bacterial Genus", df["Genus"].unique(), d
 
 filtered_df = df[df["Gram_Staining"].isin(gram_options) & df["Genus"].isin(genus_options)]
 
-# ----- Chart 1: Penicillin Resistance -----
-st.header("🔬 Penicillin Resistance")
-st.markdown("Which bacteria are most resistant to Penicillin?")
+# ----- Dropdown for Antibiotic Selection -----
+antibiotic = st.selectbox("Select Antibiotic to Display", ["Penicillin", "Streptomycin", "Neomycin"], index=0)
 
-chart1 = alt.Chart(filtered_df).mark_bar().encode(
-    x=alt.X("Penicillin:Q", title="MIC (Minimum Inhibitory Concentration)"),
+# Epidemiological Cutoff (ECOFF) value fixed at 1 μg/mL as per your description
+ecoff_value = 1
+
+# ----- Chart 1: Antibiotic Resistance Bar Chart with test tube style -----
+st.header(f"🔬 {antibiotic} Resistance")
+st.markdown(f"Which bacteria are most resistant to {antibiotic}?")
+
+base = alt.Chart(filtered_df).encode(
     y=alt.Y("Bacteria:N", sort="-x"),
-    color="Gram_Staining:N",
-    tooltip=["Bacteria", "Penicillin", "Gram_Staining", "Genus"]
-).properties(
-    width=700,
-    height=400
-).interactive()
+    tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
+)
+
+bars = base.mark_bar(cornerRadiusTopLeft=10, cornerRadiusTopRight=10).encode(
+    x=alt.X(f"{antibiotic}:Q", title="MIC (Minimum Inhibitory Concentration)"),
+    color=alt.Color("Gram_Staining:N", legend=None),
+)
+
+# Overlay to create test tube "neck" (a small white rectangle at top)
+neck = base.mark_rect(
+    xOffset=-3,  # slightly left to simulate neck shape
+    height=5,
+    fill='white'
+).encode(
+    x=alt.X(f"{antibiotic}:Q", title="MIC (Minimum Inhibitory Concentration)"),
+)
+
+# Dashed vertical line at ECOFF
+rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(strokeDash=[5,5], color='black').encode(
+    x='ECOFF:Q'
+)
+
+chart1 = (bars + rule).properties(width=700, height=400).interactive()
 
 st.altair_chart(chart1)
-
-# ----- Chart 2: Streptomycin vs Neomycin -----
-st.header("🧪 Streptomycin vs Neomycin Resistance")
-st.markdown("Are there trade-offs in resistance between these two antibiotics?")
-
-chart2 = alt.Chart(filtered_df).mark_circle(size=100).encode(
-    x=alt.X("Streptomycin:Q", scale=alt.Scale(type='log'), title="Streptomycin MIC"),
-    y=alt.Y("Neomycin:Q", scale=alt.Scale(type='log'), title="Neomycin MIC"),
-    color="Genus:N",
-    tooltip=["Bacteria", "Streptomycin", "Neomycin", "Gram_Staining"]
-).properties(
-    width=700,
-    height=400
-).interactive()
-
-st.altair_chart(chart2)
 
 # ----- Chart 3: Antibiotic Heatmap -----
 st.header("🔥 Resistance Heatmap")
