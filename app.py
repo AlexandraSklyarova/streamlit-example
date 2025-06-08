@@ -73,21 +73,45 @@ penicillin_story = (base + text + rule).properties(
 st.altair_chart(penicillin_story)
 
 
-# ----- Chart 2: Streptomycin vs Neomycin -----
-st.header("🧪 Streptomycin vs Neomycin Resistance")
-st.markdown("Are there trade-offs in resistance between these two antibiotics?")
+# ----- Chart 3: MIC Comparison Across Antibiotics -----
+st.header("📈 MIC Comparison Across Antibiotics")
+st.markdown("""
+**What does this show?**
 
-chart2 = alt.Chart(filtered_df).mark_circle(size=100).encode(
-    x=alt.X("Streptomycin:Q", scale=alt.Scale(type='log'), title="Streptomycin MIC"),
-    y=alt.Y("Neomycin:Q", scale=alt.Scale(type='log'), title="Neomycin MIC"),
-    color="Genus:N",
-    tooltip=["Bacteria", "Streptomycin", "Neomycin", "Gram_Staining"]
+Each line traces the Minimum Inhibitory Concentration (MIC) for one antibiotic across different bacteria.
+
+- A **lower MIC** indicates higher effectiveness.
+- Antibiotics behave differently depending on the organism. Streptomycin is effective against *Streptococcus hemolyticus*, but Penicillin is not.
+""")
+
+# Reshape data to long format
+long_df = filtered_df.melt(
+    id_vars=["Bacteria", "Gram_Staining", "Genus"],
+    value_vars=["Penicillin", "Streptomycin", "Neomycin"],
+    var_name="Antibiotic",
+    value_name="MIC"
+)
+
+# Sort bacteria to match display
+long_df["Bacteria"] = pd.Categorical(
+    long_df["Bacteria"],
+    categories=filtered_df.sort_values("Penicillin")["Bacteria"],
+    ordered=True
+)
+
+# Create line chart
+mic_lines = alt.Chart(long_df).mark_line(point=True).encode(
+    x=alt.X("Bacteria:N", sort=None, title="Bacteria"),
+    y=alt.Y("MIC:Q", scale=alt.Scale(type="log"), title="MIC (lower is more effective)"),
+    color=alt.Color("Antibiotic:N", legend=alt.Legend(title="Antibiotic")),
+    tooltip=["Bacteria", "Antibiotic", "MIC"]
 ).properties(
     width=700,
-    height=400
-).interactive()
+    height=400,
+    title="MIC Trends Across Bacteria by Antibiotic"
+).configure_axisX(labelAngle=-45)
 
-st.altair_chart(chart2)
+st.altair_chart(mic_lines)
 
 # ----- Chart 3: Antibiotic Heatmap -----
 st.header("🔥 Resistance Heatmap")
