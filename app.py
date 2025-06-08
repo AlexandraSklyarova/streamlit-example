@@ -47,27 +47,27 @@ ecoff_value = 1
 st.header(f"🔬 {antibiotic} Resistance")
 
 # Filter out non-positive values to avoid log scale issues
+# Drop zero or negative MICs if any
 safe_df = filtered_df[filtered_df[antibiotic] > 0]
 
-# Bar chart
+# Bar chart with linear scale
 bar_chart = alt.Chart(safe_df).mark_bar().encode(
     x=alt.X(f"{antibiotic}:Q",
-            scale=alt.Scale(type='log', base=10),
-            title="MIC (μg/mL, log scale)"),
+            title="MIC (μg/mL, linear scale)"),
     y=alt.Y("Bacteria:N", sort='-x'),
-    color=alt.Color("Gram_Staining:N", title="Gram Staining"),
+    color=alt.Color("Gram_Staining:N", title="Gram Stain"),
     tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
 ).properties(
     width=700,
     height=500
 )
 
-# Add ECOFF rule
+# Optional ECOFF line (still in linear scale)
 rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
     color='black',
     strokeDash=[5, 5]
 ).encode(
-    x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
+    x=alt.X("ECOFF:Q")
 )
 
 st.altair_chart(bar_chart + rule)
