@@ -47,35 +47,63 @@ ecoff_value = 1
 
 # ----- Chart 1: Antibiotic Resistance Bar Chart with test tube style -----
 st.header(f"🔬 {antibiotic} Resistance")
-st.markdown(f"Which bacteria are most resistant to {antibiotic}?")
+st.markdown(f"Which bacteria are most resistant to **{antibiotic}**?")
 
-base = alt.Chart(filtered_df).encode(
-    y=alt.Y("Bacteria:N", sort="-x"),
-    tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
-)
+col1, col2 = st.columns([4, 2])
 
-bars = base.mark_bar(cornerRadiusTopLeft=10, cornerRadiusTopRight=10).encode(
-    x=alt.X(f"{antibiotic}:Q", title="MIC (Minimum Inhibitory Concentration)"),
-    color=alt.Color("Gram_Staining:N", legend=None),
-)
+with col1:
+    base = alt.Chart(filtered_df).encode(
+        y=alt.Y("Bacteria:N", sort=f"-x"),
+        tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
+    )
 
-# Overlay to create test tube "neck" (a small white rectangle at top)
-neck = base.mark_rect(
-    xOffset=-3,  # slightly left to simulate neck shape
-    height=5,
-    fill='white'
-).encode(
-    x=alt.X(f"{antibiotic}:Q", title="MIC (Minimum Inhibitory Concentration)"),
-)
+    # Rounded bar ("tube") body
+    bars = base.mark_bar(
+        size=20,
+        cornerRadiusTopLeft=6,
+        cornerRadiusTopRight=6
+    ).encode(
+        x=alt.X(
+            f"{antibiotic}:Q",
+            title="MIC (μg/mL, log scale)",
+            scale=alt.Scale(type='log', base=10)
+        ),
+        color=alt.Color("Gram_Staining:N", legend=alt.Legend(title="Gram Staining"))
+    )
 
-# Dashed vertical line at ECOFF
-rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(strokeDash=[5,5], color='black').encode(
-    x='ECOFF:Q'
-)
+    # White “neck” at top of bar
+    necks = base.mark_bar(
+        size=6,
+        color="white"
+    ).encode(
+        x=alt.X(
+            f"{antibiotic}:Q",
+            scale=alt.Scale(type='log', base=10)
+        )
+    )
 
-chart1 = (bars + rule).properties(width=700, height=400).interactive()
+    # ECOFF line
+    rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
+        strokeDash=[5, 5], color='black'
+    ).encode(
+        x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
+    )
 
-st.altair_chart(chart1)
+    chart1 = alt.layer(bars, necks, rule).properties(width=600, height=450).interactive()
+    st.altair_chart(chart1)
+
+with col2:
+    st.markdown("""
+    ### 🧪 How to Read This Chart
+
+    - The **horizontal axis** shows the MIC (Minimum Inhibitory Concentration) on a **logarithmic scale**.
+    - Each **bar** represents a bacterial strain's MIC for the selected antibiotic.
+    - The **dashed black line** marks an **ECOFF** value of 1 μg/mL:
+        - Below this line = **susceptible**.
+        - Above this line = **potential resistance**.
+    - The **rounded bar tops** and white caps mimic **test tubes** to visually reinforce the idea of resistance testing.
+    """)
+
 
 # ----- Chart 3: Antibiotic Heatmap -----
 st.header("🔥 Resistance Heatmap")
