@@ -48,21 +48,19 @@ st.header(f"🔬 {antibiotic} Resistance")
 
 # Filter out non-positive values to avoid log scale issues
 # Drop zero or negative MICs if any
+# --- Zoomable Bar Chart with ECOFF line ---
 safe_df = filtered_df[filtered_df[antibiotic] > 0]
 
-# Bar chart with linear scale
 bar_chart = alt.Chart(safe_df).mark_bar().encode(
-    x=alt.X(f"{antibiotic}:Q",
-            title="MIC (μg/mL, linear scale)"),
+    x=alt.X(f"{antibiotic}:Q", title="MIC (μg/mL, linear scale)"),
     y=alt.Y("Bacteria:N", sort='-x'),
     color=alt.Color("Gram_Staining:N", title="Gram Stain"),
     tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
 ).properties(
     width=700,
     height=500
-)
+).interactive()
 
-# Optional ECOFF line (still in linear scale)
 rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
     color='black',
     strokeDash=[5, 5]
@@ -72,24 +70,30 @@ rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
 
 st.altair_chart(bar_chart + rule)
 
-# ----- Heatmap -----
+# --- Heatmap: Filtered by Selected Antibiotic ---
 st.header("🔥 Resistance Heatmap")
-st.markdown("Overview of MICs across all antibiotics.")
+st.markdown("See resistance levels for the selected antibiotic across all bacteria.")
 
-melted = pd.melt(filtered_df, id_vars=["Bacteria"], value_vars=["Penicillin", "Streptomycin", "Neomycin"],
-                 var_name="Antibiotic", value_name="MIC")
+melted = pd.melt(filtered_df,
+                 id_vars=["Bacteria"],
+                 value_vars=["Penicillin", "Streptomycin", "Neomycin"],
+                 var_name="Antibiotic",
+                 value_name="MIC")
+
+melted = melted[melted["Antibiotic"] == antibiotic]
 
 heatmap = alt.Chart(melted).mark_rect().encode(
-    x=alt.X("Antibiotic:N", title="Antibiotic"),
+    x=alt.X("Antibiotic:N"),
     y=alt.Y("Bacteria:N", sort=alt.EncodingSortField("MIC", op="max", order="descending")),
-    color=alt.Color("MIC:Q", scale=alt.Scale(scheme="redyellowgreen", reverse=True)),
-    tooltip=["Bacteria", "Antibiotic", "MIC"]
+    color=alt.Color("MIC:Q", scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
+    tooltip=["Bacteria", "MIC"]
 ).properties(
     width=500,
     height=500
 )
 
 st.altair_chart(heatmap)
+
 
 # ----- Ending -----
 st.header("🧬 Final Thoughts")
