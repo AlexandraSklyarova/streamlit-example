@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt 
 import numpy as np
 
-# ----- Data Setup ----- 
+# ----- Data Setup -----
 data = [
     {"Bacteria": "Aerobacter aerogenes", "Penicillin": 870, "Streptomycin": 1, "Neomycin": 1.6, "Gram_Staining": "negative", "Genus": "other"},
     {"Bacteria": "Bacillus anthracis", "Penicillin": 0.001, "Streptomycin": 0.01, "Neomycin": 0.007, "Gram_Staining": "positive", "Genus": "other"},
@@ -22,78 +22,47 @@ data = [
     {"Bacteria": "Streptococcus hemolyticus", "Penicillin": 0.001, "Streptomycin": 14, "Neomycin": 10, "Gram_Staining": "positive", "Genus": "Streptococcus"},
     {"Bacteria": "Streptococcus viridans", "Penicillin": 0.005, "Streptomycin": 10, "Neomycin": 40, "Gram_Staining": "positive", "Genus": "Streptococcus"}
 ]
-
 df = pd.DataFrame(data)
 
-# ----- Streamlit Layout ----- 
+# ----- Streamlit Layout -----
 st.title("💊 Antibiotic Resistance Exploration")
 st.markdown("""
 This interactive tool allows you to explore the **resistance levels of different bacteria** to three antibiotics: **Penicillin, Streptomycin, and Neomycin**.
 Use the controls below to filter and compare bacteria by their **Gram stain** and **genus**.
 """)
 
-# ----- Filters ----- 
+# ----- Filters -----
 gram_options = st.multiselect("Select Gram Staining Type", df["Gram_Staining"].unique(), default=df["Gram_Staining"].unique())
 genus_options = st.multiselect("Select Bacterial Genus", df["Genus"].unique(), default=df["Genus"].unique())
 
 filtered_df = df[df["Gram_Staining"].isin(gram_options) & df["Genus"].isin(genus_options)]
 
-# ----- Antibiotic Dropdown ----- 
-antibiotic = st.selectbox("Select Antibiotic to Display", ["Penicillin", "Streptomycin", "Neomycin"], index=0)
+# ----- Antibiotic Dropdown -----
+antibiotic = st.selectbox("Select Antibiotic to Display", ["Penicillin", "Streptomycin", "Neomycin"])
 
-# ----- ECOFF ----- 
+# ----- ECOFF Value -----
 ecoff_value = 1
 
-# ----- Chart: Bar with Emoji Overlay -----
+# ----- Chart: MIC Bar Plot -----
 st.header(f"🔬 {antibiotic} Resistance")
 
-unit_size = 1
-
-# Compute the number of emojis per row (cap at 10 for sanity)
-filtered_df["emoji_count"] = np.floor(filtered_df[antibiotic] / unit_size).astype(int).clip(upper=10)
-filtered_df["emoji_label"] = filtered_df["emoji_count"].apply(lambda x: "🦠" * max(x, 1))  # Always show at least one
-
-col1, col2 = st.columns([4, 2])
-
-with col1:
-    base = alt.Chart(filtered_df).encode(
-        x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type='log', base=10), title="MIC (μg/mL, log scale)"),
-        y=alt.Y("Bacteria:N", sort="-x")
-    )
-
-    bars = base.mark_bar(color="teal").encode(
-        tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
-    )
-
-    emojis = base.mark_text(
-    align='left',
-    baseline='middle',
-    dx=5,
-    fontSize=15
-).encode(
-    text="emoji_label:N"
+chart = alt.Chart(filtered_df).mark_bar().encode(
+    x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type='log', base=10), title="MIC (μg/mL, log scale)"),
+    y=alt.Y("Bacteria:N", sort="-x"),
+    color="Gram_Staining:N",
+    tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
+).properties(
+    width=700,
+    height=500
 )
 
+rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
+    strokeDash=[5, 5], color='black'
+).encode(
+    x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
+)
 
-    rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
-        strokeDash=[5, 5], color='black'
-    ).encode(
-        x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
-    )
-
-    st.altair_chart(bars + emojis + rule, use_container_width=True)
-
-with col2:
-    st.markdown(f"""
-    ### 🧪 How to Read This Chart
-
-    - **Bars** represent MIC values (resistance level) for the selected antibiotic.
-    - The **🦠 emoji** helps visually mark each bacterium on the chart.
-    - The **x-axis is log-scaled** to reflect wide resistance ranges.
-    - The **dashed line** marks the ECOFF threshold at **{ecoff_value} μg/mL**:
-        - Left = **susceptible**
-        - Right = **resistant**
-    """)
+st.altair_chart(chart + rule)
 
 # ----- Heatmap -----
 st.header("🔥 Resistance Heatmap")
