@@ -89,6 +89,25 @@ else:
 
 st.altair_chart(full_chart)
 
+# ----- Chart Explanation Table -----
+st.markdown("### 📊 Chart Legend and Cutoff Explanation")
+
+explanation_df = pd.DataFrame([
+    {
+        "Line Type": "Black Dashed Line",
+        "Value": "ECOFF = 1 μg/mL",
+        "Meaning": "Epidemiological cutoff — separates wild-type from non-wild-type bacteria"
+    },
+    {
+        "Line Type": "Red Dashed Line",
+        "Value": f"{resistance_cutoffs[antibiotic]} μg/mL" if antibiotic in resistance_cutoffs else "—",
+        "Meaning": "Resistance threshold — above this value, bacteria may be clinically resistant"
+    }
+])
+
+st.table(explanation_df)
+
+
 
 # --- Heatmap: Filtered by Selected Antibiotic ---
 st.header("🔥 Resistance Heatmap")
