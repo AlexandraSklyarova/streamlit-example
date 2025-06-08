@@ -105,5 +105,5 @@ This dataset reveals dramatic differences in bacterial resistance patterns.
 - **Gram-positive bacteria** tend to be more sensitive overall.
 - **Genus matters**: *Staphylococcus* species are extremely sensitive to Neomycin.
 
-What other stories can you uncover? Try changing the filters above!
+
 """)
