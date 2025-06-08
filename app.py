@@ -75,19 +75,39 @@ ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
     x='ECOFF:Q'
 )
 
-# Red dashed line = Resistance threshold (only if defined)
+# Resistance threshold annotation
 if antibiotic in resistance_cutoffs:
-    red_line = alt.Chart(pd.DataFrame({f"{antibiotic}_res": [resistance_cutoffs[antibiotic]]})).mark_rule(
+    res_val = resistance_cutoffs[antibiotic]
+    red_line = alt.Chart(pd.DataFrame({f"{antibiotic}_res": [res_val]})).mark_rule(
         color='red',
         strokeDash=[5, 5]
     ).encode(
         x=alt.X(f"{antibiotic}_res:Q")
     )
-    full_chart = bar_chart + ecoff_line + red_line
+
+    # Annotation text
+    annotation_text = alt.Chart(pd.DataFrame({
+        f"{antibiotic}_res": [res_val],
+        "label": [f"Ineffective ({res_val})"]
+    })).mark_text(
+        align='left',
+        baseline='bottom',
+        dx=5,
+        dy=-10,
+        color='red',
+        fontWeight='bold'
+    ).encode(
+        x=alt.X(f"{antibiotic}_res:Q"),
+        y=alt.value(0),  # Place it near the bottom of the chart
+        text='label:N'
+    )
+
+    full_chart = bar_chart + ecoff_line + red_line + annotation_text
 else:
     full_chart = bar_chart + ecoff_line
 
 st.altair_chart(full_chart)
+
 
 # ----- Chart Explanation Table -----
 st.markdown("###  Chart Legend and Cutoff Explanation")
