@@ -77,38 +77,53 @@ ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
 
 # Resistance threshold annotation
 # Add label for red dashed resistance line
+# --- ECOFF Line ---
+ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
+    color='black',
+    strokeDash=[5, 5]
+).encode(
+    x='ECOFF:Q'
+)
+
+# --- Resistance Threshold Line + Label ---
 if antibiotic in resistance_cutoffs:
     res_val = resistance_cutoffs[antibiotic]
-    
-    red_line = alt.Chart(pd.DataFrame({f"{antibiotic}_res": [res_val]})).mark_rule(
+
+    # Red dashed line at resistance threshold
+    red_line = alt.Chart(pd.DataFrame({"cutoff": [res_val]})).mark_rule(
         color='red',
         strokeDash=[5, 5]
     ).encode(
-        x=alt.X(f"{antibiotic}_res:Q")
+        x='cutoff:Q'
     )
 
-    # Pick middle bacterium (or first) for y-value label placement
-    mid_bacterium = safe_df.sort_values(by=antibiotic, ascending=False).iloc[len(safe_df)//2]["Bacteria"]
+    # Get middle bacterium name for label y-position
+    middle_index = len(safe_df) // 2
+    mid_bacterium = safe_df.sort_values(by=antibiotic, ascending=False).iloc[middle_index]["Bacteria"]
 
-    annotation_text = alt.Chart(pd.DataFrame({
-        f"{antibiotic}_res": [res_val],
+    # Label near the resistance threshold
+    red_label = alt.Chart(pd.DataFrame({
+        "cutoff": [res_val],
         "Bacteria": [mid_bacterium],
-        "label": [f"Resistance cutoff = {res_val} μg/mL"]
+        "label": [f"{antibiotic} Resistance Cutoff = {res_val} μg/mL"]
     })).mark_text(
         align='left',
-        baseline='middle',
         dx=6,
-        color='red',
-        fontWeight='bold'
+        dy=0,
+        fontSize=12,
+        fontWeight='bold',
+        color='red'
     ).encode(
-        x=alt.X(f"{antibiotic}_res:Q"),
-        y=alt.Y("Bacteria:N"),
+        x='cutoff:Q',
+        y=alt.Y('Bacteria:N'),
         text='label:N'
     )
 
-    full_chart = bar_chart + ecoff_line + red_line + annotation_text
+    full_chart = bar_chart + red_line + red_label + ecoff_line
+
 else:
     full_chart = bar_chart + ecoff_line
+
 
 
 st.altair_chart(full_chart)
