@@ -45,43 +45,37 @@ We've added a label and highlight to emphasize this outlier.
 
 highlighted = filtered_df[filtered_df["Bacteria"] == "Aerobacter aerogenes"]
 
-base = alt.Chart(filtered_df).mark_bar().encode(
-    x=alt.X("Penicillin:Q", title="MIC (Minimum Inhibitory Concentration)"),
-    y=alt.Y("Bacteria:N", sort="-x"),
-    color=alt.condition(
-        alt.datum.Bacteria == "Aerobacter aerogenes",
-        alt.value("crimson"),  # highlight
-        alt.Color("Gram_Staining:N")
-    ),
-    tooltip=["Bacteria", "Penicillin", "Gram_Staining", "Genus"]
+bars = alt.Chart(df_melted).mark_bar().encode(
+    x=alt.X("Bacteria:N", sort="-y", title="Bacteria"),
+    y=alt.Y("MIC:Q", scale=alt.Scale(type="log"), title="MIC (µg/mL)"),
+    color="Antibiotic:N",
+    tooltip=["Bacteria", "Antibiotic", "MIC"]
+).properties(width=800, height=400)
+
+# --- S/I/R thresholds for Penicillin ---
+thresholds = pd.DataFrame({
+    "MIC": [8, 16, 32],
+    "label": ["S", "I", "R"],
+    "color": ["green", "orange", "red"]
+})
+
+rules = alt.Chart(thresholds).mark_rule(strokeDash=[4, 4], size=2).encode(
+    y="MIC:Q",
+    color=alt.Color("color:N", scale=None)
 )
 
-text = alt.Chart(highlighted).mark_text(
-    align='left',
-    baseline='middle',
-    dx=5,
-    fontSize=12,
-    fontWeight='bold'
+labels = alt.Chart(thresholds).mark_text(
+    align="left", baseline="bottom", dx=5, dy=-3, fontWeight="bold"
 ).encode(
-    x="Penicillin:Q",
-    y=alt.Y("Bacteria:N", sort="-x"),
-    text=alt.value("🚨 Extremely Resistant")
+    y="MIC:Q",
+    text="label:N"
 )
 
-rule = alt.Chart(pd.DataFrame({"x": [100]})).mark_rule(
-    strokeDash=[4,4], color='black'
-).encode(
-    x="x:Q"
-)
+# --- Combine ---
+final_chart = (bars + rules + labels).configure_axisX(labelAngle=-45)
 
-penicillin_story = (base + text + rule).properties(
-    width=700,
-    height=400,
-    title="Penicillin Resistance (MIC) with Highlighted Outlier"
-)
-
-st.altair_chart(penicillin_story)
-
+# --- Display ---
+st.altair_chart(final_chart, use_container_width=True)
 
 # ----- Chart 3: MIC Comparison Across Antibiotics -----
 st.header("📈 MIC Comparison Across Antibiotics")
