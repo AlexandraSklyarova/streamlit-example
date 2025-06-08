@@ -57,6 +57,12 @@ safe_df = filtered_df[filtered_df[antibiotic] > 0]
 # ----- Bar Chart -----
 st.header(f" {antibiotic} Resistance")
 
+# ----- Bar Chart with "High Resistance" label -----
+
+# Data points for high resistance
+high_resistance_df = safe_df[safe_df[antibiotic] > resistance_cutoffs.get(antibiotic, float('inf'))]
+
+# Base bar chart
 bar_chart = alt.Chart(safe_df).mark_bar().encode(
     x=alt.X(f"{antibiotic}:Q", title="MIC (μg/mL, linear scale)"),
     y=alt.Y("Bacteria:N", sort='-x'),
@@ -67,7 +73,7 @@ bar_chart = alt.Chart(safe_df).mark_bar().encode(
     height=500
 ).interactive()
 
-# Black dashed line = ECOFF
+# ECOFF line (black dashed)
 ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
     color='black',
     strokeDash=[5, 5]
@@ -75,21 +81,10 @@ ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
     x='ECOFF:Q'
 )
 
-# Resistance threshold annotation
-# Add label for red dashed resistance line
-# --- ECOFF Line ---
-ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
-    color='black',
-    strokeDash=[5, 5]
-).encode(
-    x='ECOFF:Q'
-)
-
-# --- Resistance Threshold Line + Label ---
 if antibiotic in resistance_cutoffs:
     res_val = resistance_cutoffs[antibiotic]
 
-    # Red dashed line at resistance threshold
+    # Red dashed resistance cutoff line
     red_line = alt.Chart(pd.DataFrame({"cutoff": [res_val]})).mark_rule(
         color='red',
         strokeDash=[5, 5]
@@ -97,11 +92,9 @@ if antibiotic in resistance_cutoffs:
         x='cutoff:Q'
     )
 
-    # Get middle bacterium name for label y-position
+    # Label for resistance cutoff line
     middle_index = len(safe_df) // 2
     mid_bacterium = safe_df.sort_values(by=antibiotic, ascending=False).iloc[middle_index]["Bacteria"]
-
-    # Label near the resistance threshold
     red_label = alt.Chart(pd.DataFrame({
         "cutoff": [res_val],
         "Bacteria": [mid_bacterium],
@@ -119,14 +112,16 @@ if antibiotic in resistance_cutoffs:
         text='label:N'
     )
 
-    full_chart = bar_chart + red_line + red_label + ecoff_line
+    # Add "High Resistance" labels next to outliers
+    high_resistance_labels = alt.Chart(high_resistance_df).mark_text(
+        align='left',
+        dx=5,
+        dy=-7,
+        fontSize=12,
+        fontWeight='bold',
+        color='red'
+    ).e
 
-else:
-    full_chart = bar_chart + ecoff_line
-
-
-
-st.altair_chart(full_chart)
 
 
 # ----- Chart Explanation Table -----
