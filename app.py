@@ -25,7 +25,7 @@ data = [
 df = pd.DataFrame(data)
 
 # ----- Streamlit Layout -----
-st.title("💊 Antibiotic Resistance Explorer")
+st.title("When the Medicine Fails: Exploring Bacterial Resistance to Penicillin, Streptomycin, and Neomycin ")
 
 st.markdown("""
 Explore how resistant various bacteria are to **Penicillin**, **Streptomycin**, and **Neomycin**.
@@ -55,7 +55,7 @@ ecoff_value = 1
 safe_df = filtered_df[filtered_df[antibiotic] > 0]
 
 # ----- Bar Chart -----
-st.header(f"🔬 {antibiotic} Resistance")
+st.header(f" {antibiotic} Resistance")
 
 bar_chart = alt.Chart(safe_df).mark_bar().encode(
     x=alt.X(f"{antibiotic}:Q", title="MIC (μg/mL, linear scale)"),
@@ -90,7 +90,7 @@ else:
 st.altair_chart(full_chart)
 
 # ----- Chart Explanation Table -----
-st.markdown("### 📊 Chart Legend and Cutoff Explanation")
+st.markdown("###  Chart Legend and Cutoff Explanation")
 
 explanation_df = pd.DataFrame([
     {
@@ -110,7 +110,7 @@ st.table(explanation_df)
 
 
 # --- Heatmap: Filtered by Selected Antibiotic ---
-st.header("🔥 Resistance Heatmap")
+st.header(" Resistance Heatmap")
 st.markdown("See resistance levels for the selected antibiotic across all bacteria.")
 
 melted = pd.melt(filtered_df,
@@ -135,7 +135,7 @@ st.altair_chart(heatmap)
 
 
 # ----- Most Effective Antibiotic Table -----
-st.header("🏆 Most Effective Antibiotic by Bacterium")
+st.header(" Most Effective Antibiotic by Bacterium")
 st.markdown("This table shows the antibiotic with the **lowest MIC value** for each bacterium — the most effective one.")
 
 # Find the most effective antibiotic (lowest MIC) for each row
@@ -151,9 +151,41 @@ st.dataframe(df_effective[["Bacteria", "Most_Effective", "Lowest_MIC"]].sort_val
 
 
 # ----- Ending -----
-st.header("🧬 Final Thoughts")
-st.markdown("""
-- MIC (Minimum Inhibitory Concentration) values vary **dramatically** by antibiotic and bacterial species.
-- A **log scale** helps us better visualize large differences.
-- The **ECOFF** (epidemiological cutoff) helps distinguish wild type vs non-wild type behavior at 1 μg/mL.
-""")
+# ----- Key Findings Summary -----
+st.header("📈 Key Findings Summary")
+
+# Identify most resistant bacteria
+max_mic_value = filtered_df[antibiotic].max()
+most_resistant_bacteria = filtered_df[filtered_df[antibiotic] == max_mic_value]["Bacteria"].tolist()
+
+# Identify most effective antibiotic overall (lowest average MIC)
+avg_mics = {ab: filtered_df[ab].mean() for ab in ["Penicillin", "Streptomycin", "Neomycin"]}
+most_effective_ab = min(avg_mics, key=avg_mics.get)
+most_effective_value = avg_mics[most_effective_ab]
+
+# Mean MICs grouped by Gram staining
+df_grouped = filtered_df.groupby("Gram_Staining")[mic_columns].mean().reset_index()
+df_grouped["Best_Antibiotic"] = df_grouped[mic_columns].idxmin(axis=1)
+
+st.markdown("### 🔬 Most Effective Antibiotic by Gram Stain Group")
+st.dataframe(df_grouped[["Gram_Staining", "Penicillin", "Streptomycin", "Neomycin", "Best_Antibiotic"]])
+
+
+# Summary Table
+summary_df = pd.DataFrame([
+    {
+        "Category": " Most Resistant Bacteria",
+        "Result": ", ".join(most_resistant_bacteria),
+        "Details": f"{antibiotic} MIC = {max_mic_value} μg/mL"
+    },
+    {
+        "Category": " Most Effective Antibiotic (on average)",
+        "Result": most_effective_ab,
+        "Details": f"Average MIC ≈ {most_effective_value:.2f} μg/mL"
+    },
+ 
+    
+])
+
+st.table(summary_df)
+
