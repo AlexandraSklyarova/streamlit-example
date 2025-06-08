@@ -133,6 +133,8 @@ heatmap = alt.Chart(melted).mark_rect().encode(
 
 st.altair_chart(heatmap)
 
+st.header(" Key Findings Summary")
+
 
 # ----- Most Effective Antibiotic Table -----
 st.header(" Most Effective Antibiotic by Bacterium")
@@ -152,7 +154,7 @@ st.dataframe(df_effective[["Bacteria", "Most_Effective", "Lowest_MIC"]].sort_val
 
 # ----- Ending -----
 # ----- Key Findings Summary -----
-st.header(" Key Findings Summary")
+
 
 # Identify most resistant bacteria
 max_mic_value = filtered_df[antibiotic].max()
