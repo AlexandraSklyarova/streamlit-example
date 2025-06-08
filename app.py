@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
-# --- Data ---
+# ----- Data Setup -----
 data = [
     {"Bacteria": "Aerobacter aerogenes", "Penicillin": 870, "Streptomycin": 1, "Neomycin": 1.6, "Gram_Staining": "negative", "Genus": "other"},
     {"Bacteria": "Bacillus anthracis", "Penicillin": 0.001, "Streptomycin": 0.01, "Neomycin": 0.007, "Gram_Staining": "positive", "Genus": "other"},
@@ -21,143 +21,83 @@ data = [
     {"Bacteria": "Streptococcus hemolyticus", "Penicillin": 0.001, "Streptomycin": 14, "Neomycin": 10, "Gram_Staining": "positive", "Genus": "Streptococcus"},
     {"Bacteria": "Streptococcus viridans", "Penicillin": 0.005, "Streptomycin": 10, "Neomycin": 40, "Gram_Staining": "positive", "Genus": "Streptococcus"}
 ]
+
 df = pd.DataFrame(data)
 
-# --- Sidebar filters ---
-st.sidebar.title("Filters")
-selected_gram = st.sidebar.multiselect(
-    "Select Gram Staining:",
-    options=df["Gram_Staining"].unique(),
-    default=list(df["Gram_Staining"].unique())
-)
-selected_genus = st.sidebar.multiselect(
-    "Select Genus:",
-    options=df["Genus"].unique(),
-    default=list(df["Genus"].unique())
-)
+# ----- Streamlit Layout -----
+st.title("💊 Antibiotic Resistance Exploration")
+st.markdown("""
+This interactive tool allows you to explore the **resistance levels of different bacteria** to three antibiotics: **Penicillin, Streptomycin, and Neomycin**.
+Use the controls below to filter and compare bacteria by their **Gram stain** and **genus**.
 
-filtered_df = df[
-    df["Gram_Staining"].isin(selected_gram) & df["Genus"].isin(selected_genus)
-]
+Scroll through each section to learn more about the story hidden in the data.
+""")
 
-# --- Antibiotic selection ---
-st.sidebar.title("Antibiotic Chart Selection")
-selected_antibiotic = st.sidebar.selectbox(
-    "Choose Antibiotic:",
-    options=["Penicillin", "Streptomycin", "Neomycin"]
-)
+# ----- Filters -----
+gram_options = st.multiselect("Select Gram Staining Type", df["Gram_Staining"].unique(), default=df["Gram_Staining"].unique())
+genus_options = st.multiselect("Select Bacterial Genus", df["Genus"].unique(), default=df["Genus"].unique())
 
-# --- Melt data for chosen antibiotic ---
-df_melted = filtered_df[["Bacteria", selected_antibiotic]].rename(
-    columns={selected_antibiotic: "MIC"}
-)
+filtered_df = df[df["Gram_Staining"].isin(gram_options) & df["Genus"].isin(genus_options)]
 
-# Sort bacteria by MIC ascending for nicer x-axis ordering
-df_melted = df_melted.sort_values("MIC", ascending=True)
-bacteria_order = list(df_melted["Bacteria"])
+# ----- Chart 1: Penicillin Resistance -----
+st.header("🔬 Penicillin Resistance")
+st.markdown("Which bacteria are most resistant to Penicillin?")
 
-# --- S/I/R thresholds per antibiotic ---
-thresholds_map = {
-    "Penicillin": {"S": 8, "I": 16, "R": 32},
-    "Streptomycin": {"R": 32},  # No S/I defined, only resistance threshold
-    "Neomycin": {}  # No clinical breakpoints
-}
-
-thresholds = thresholds_map.get(selected_antibiotic, {})
-
-# --- Bar chart ---
-bars = alt.Chart(df_melted).mark_bar().encode(
-    x=alt.X("Bacteria:N", sort=bacteria_order, title="Bacteria"),
-    y=alt.Y("MIC:Q", scale=alt.Scale(type="log"), title="MIC (µg/mL)"),
-    color=alt.value("steelblue"),
-    tooltip=["Bacteria", "MIC"]
+chart1 = alt.Chart(filtered_df).mark_bar().encode(
+    x=alt.X("Penicillin:Q", title="MIC (Minimum Inhibitory Concentration)"),
+    y=alt.Y("Bacteria:N", sort="-x"),
+    color="Gram_Staining:N",
+    tooltip=["Bacteria", "Penicillin", "Gram_Staining", "Genus"]
 ).properties(
-    width=800,
-    height=400,
-    title=f"{selected_antibiotic} MIC by Bacteria"
-)
+    width=700,
+    height=400
+).interactive()
 
-# --- Add S/I/R dashed lines and labels ---
-rules = []
-labels = []
-color_map = {"S": "green", "I": "orange", "R": "red"}
+st.altair_chart(chart1)
 
-for label, val in thresholds.items():
-    rule = alt.Chart(pd.DataFrame({"y": [val]})).mark_rule(strokeDash=[6, 4], color=color_map[label], size=2).encode(
-        y="y:Q"
-    )
-    text = alt.Chart(pd.DataFrame({"y": [val], "label": [label]})).mark_text(
-        align="left", baseline="bottom", dx=5, dy=-5, fontWeight="bold", color=color_map[label]
-    ).encode(
-        y="y:Q",
-        text="label:N"
-    )
-    rules.append(rule)
-    labels.append(text)
+# ----- Chart 2: Streptomycin vs Neomycin -----
+st.header("🧪 Streptomycin vs Neomycin Resistance")
+st.markdown("Are there trade-offs in resistance between these two antibiotics?")
 
-final_chart = bars
-if rules:
-    for r in rules:
-        final_chart += r
-    for l in labels:
-        final_chart += l
+chart2 = alt.Chart(filtered_df).mark_circle(size=100).encode(
+    x=alt.X("Streptomycin:Q", scale=alt.Scale(type='log'), title="Streptomycin MIC"),
+    y=alt.Y("Neomycin:Q", scale=alt.Scale(type='log'), title="Neomycin MIC"),
+    color="Genus:N",
+    tooltip=["Bacteria", "Streptomycin", "Neomycin", "Gram_Staining"]
+).properties(
+    width=700,
+    height=400
+).interactive()
 
-final_chart = final_chart.configure_axisX(labelAngle=-45)
+st.altair_chart(chart2)
 
-# --- Display bar chart ---
-st.header(f"🔬 MIC Values for {selected_antibiotic}")
-st.altair_chart(final_chart, use_container_width=True)
+# ----- Chart 3: Antibiotic Heatmap -----
+st.header("🔥 Resistance Heatmap")
+st.markdown("See the antibiotic resistance profile across all bacteria.")
 
-# --- Prepare data for heatmap ---
-df_heatmap = filtered_df[["Bacteria", "Penicillin", "Streptomycin", "Neomycin"]].copy()
+melted = pd.melt(filtered_df, id_vars=["Bacteria"], value_vars=["Penicillin", "Streptomycin", "Neomycin"],
+                 var_name="Antibiotic", value_name="MIC")
 
-# Melt for heatmap: Bacteria x Antibiotic x MIC
-df_heatmap_melted = df_heatmap.melt(id_vars=["Bacteria"], 
-                                    value_vars=["Penicillin", "Streptomycin", "Neomycin"],
-                                    var_name="Antibiotic",
-                                    value_name="MIC")
-
-# Order bacteria by MIC for the selected antibiotic to keep consistency
-bacteria_sorted = bacteria_order if bacteria_order else list(df_heatmap["Bacteria"])
-
-# Heatmap
-heatmap = alt.Chart(df_heatmap_melted).mark_rect().encode(
-    x=alt.X("Antibiotic:N", title="Antibiotic"),
-    y=alt.Y("Bacteria:N", sort=bacteria_sorted, title="Bacteria"),
-    color=alt.Color("MIC:Q", scale=alt.Scale(type="log", scheme="reds"), title="MIC (log scale)"),
+heatmap = alt.Chart(melted).mark_rect().encode(
+    x=alt.X("Antibiotic:N"),
+    y=alt.Y("Bacteria:N", sort=alt.EncodingSortField("MIC", op="max", order="descending")),
+    color=alt.Color("MIC:Q", scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
     tooltip=["Bacteria", "Antibiotic", "MIC"]
 ).properties(
-    width=400,
-    height=400,
-    title="Heatmap of MIC Values for All Antibiotics"
+    width=500,
+    height=500
 )
 
-st.header("🌡️ MIC Heatmap Across Antibiotics")
-st.altair_chart(heatmap, use_container_width=True)
+st.altair_chart(heatmap)
 
-# --- Summary Table ---
-st.header("📋 MIC Interpretation Summary")
-
-summary_data = pd.DataFrame({
-    "Antibiotic": ["Penicillin", "Streptomycin", "Neomycin"],
-    "Susceptible MIC": ["≤ 8 µg/mL", "Not defined clinically", "Not established"],
-    "Intermediate MIC": ["16 µg/mL", "—", "—"],
-    "Resistant MIC": ["≥ 32 µg/mL", "≥ 32 µg/mL (NARMS)", "—"],
-    "Notes": [
-        "Standard CDC/CLSI breakpoints",
-        "No clinical breakpoints; resistance threshold for surveillance",
-        "No CDC/CLSI reference for human MIC standards"
-    ]
-})
-
-st.dataframe(summary_data)
-
-# --- Final notes ---
+# ----- Ending Section -----
+st.header("🧬 Final Thoughts")
 st.markdown("""
----
-### 🧬 Final Thoughts
+This dataset reveals dramatic differences in bacterial resistance patterns.
 
-- MIC values show how sensitive bacteria are to antibiotics.
-- Lower MIC means more effective inhibition.
-- Use filters and antibiotic selector above to explore patterns.
+- **Penicillin** has the highest variance in effectiveness — some bacteria are virtually immune.
+- **Gram-positive bacteria** tend to be more sensitive overall.
+- **Genus matters**: *Staphylococcus* species are extremely sensitive to Neomycin.
+
+What other stories can you uncover? Try changing the filters above!
 """)
