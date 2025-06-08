@@ -173,12 +173,13 @@ st.dataframe(df_grouped[["Gram_Staining", "Penicillin", "Streptomycin", "Neomyci
 
 
 
-
-
 st.markdown("""
-Conclusion:
--Neomycin seems to be the most effective, appearing 10 times in the Most Effective Antibiotic Table
--Streptomycin has the lowest average MICs, but doesn't appear to be the most effective overall
--Penicillin has incredibly high MIC numbers from Gram Negative bacteria
+### Conclusion
+
+- Neomycin seems to be the most effective, appearing 10 times in the Most Effective Antibiotic Table
+- Streptomycin has the lowest average MICs, but doesn't appear to be the most effective overall
+- Penicillin has incredibly high MIC numbers from Gram Negative bacteria
+
+Always consult clinical standards like **CLSI** or **EUCAST** when interpreting MIC data.
 """)
 
