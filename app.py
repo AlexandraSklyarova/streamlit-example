@@ -1,6 +1,7 @@
 import streamlit as st 
 import pandas as pd 
 import altair as alt 
+import numpy as np
 
 # ----- Data Setup ----- 
 data = [
@@ -46,6 +47,12 @@ ecoff_value = 1
 # ----- Chart: Bar with Emoji Overlay -----
 st.header(f"🔬 {antibiotic} Resistance")
 
+unit_size = 1
+
+# Compute the number of emojis per row (cap at 10 for sanity)
+filtered_df["emoji_count"] = np.floor(filtered_df[antibiotic] / unit_size).astype(int).clip(upper=10)
+filtered_df["emoji_label"] = filtered_df["emoji_count"].apply(lambda x: "🦠" * max(x, 1))  # Always show at least one
+
 col1, col2 = st.columns([4, 2])
 
 with col1:
@@ -59,13 +66,14 @@ with col1:
     )
 
     emojis = base.mark_text(
-        align='left',
-        baseline='middle',
-        dx=5,
-        fontSize=15
-    ).encode(
-        text=alt.value("🦠")
-    )
+    align='left',
+    baseline='middle',
+    dx=5,
+    fontSize=15
+).encode(
+    text="emoji_label:N"
+)
+
 
     rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
         strokeDash=[5, 5], color='black'
