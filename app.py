@@ -117,6 +117,46 @@ mic_lines = alt.Chart(long_df).mark_line(point=True).encode(
 
 st.altair_chart(mic_lines)
 
+
+# --- Summary table data ---
+summary_data = pd.DataFrame({
+    "Antibiotic": ["Penicillin", "Streptomycin", "Neomycin"],
+    "Susceptible MIC": ["≤ 8 µg/mL", "Not defined clinically", "Not established"],
+    "Intermediate MIC": ["16 µg/mL", "—", "—"],
+    "Resistant MIC": ["≥ 32 µg/mL", "≥ 32 µg/mL (NARMS)", "—"],
+    "Notes": [
+        "Standard CDC/CLSI breakpoints",
+        "No clinical breakpoints; resistance threshold for surveillance",
+        "No CDC/CLSI reference for human MIC standards"
+    ]
+})
+
+# --- Melt data to long format for Altair table rendering ---
+summary_melted = summary_data.reset_index().melt(id_vars=["index", "Antibiotic"], var_name="Category", value_name="Value")
+
+# --- Create text chart ---
+summary_chart = alt.Chart(summary_melted).mark_text(align='left').encode(
+    x=alt.X("Category:N", title=None, axis=alt.Axis(labels=True)),
+    y=alt.Y("index:O", title=None, axis=None),
+    text="Value:N"
+).properties(
+    title="MIC Interpretation Guidelines",
+    width=800
+)
+
+# --- Add Antibiotic names in a separate column ---
+antibiotic_labels = alt.Chart(summary_data.reset_index()).mark_text(align='left', fontWeight='bold').encode(
+    y=alt.Y("index:O", title=None, axis=None),
+    text="Antibiotic:N"
+)
+
+# --- Combine labels and table ---
+full_summary_table = antibiotic_labels | summary_chart
+
+# --- Display in Streamlit ---
+st.altair_chart(full_summary_table, use_container_width=True)
+
+
 # ----- Chart 3: Antibiotic Heatmap -----
 st.header("🔥 Resistance Heatmap")
 st.markdown("See the antibiotic resistance profile across all bacteria.")
