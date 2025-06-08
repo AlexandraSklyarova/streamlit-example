@@ -95,6 +95,22 @@ heatmap = alt.Chart(melted).mark_rect().encode(
 st.altair_chart(heatmap)
 
 
+# ----- Most Effective Antibiotic Table -----
+st.header("🏆 Most Effective Antibiotic by Bacterium")
+st.markdown("This table shows the antibiotic with the **lowest MIC value** for each bacterium — the most effective one.")
+
+# Find the most effective antibiotic (lowest MIC) for each row
+mic_columns = ["Penicillin", "Streptomycin", "Neomycin"]
+df_effective = filtered_df.copy()
+
+# Find minimum MIC and corresponding antibiotic
+df_effective["Most_Effective"] = df_effective[mic_columns].idxmin(axis=1)
+df_effective["Lowest_MIC"] = df_effective[mic_columns].min(axis=1)
+
+# Display results
+st.dataframe(df_effective[["Bacteria", "Most_Effective", "Lowest_MIC"]].sort_values("Lowest_MIC"))
+
+
 # ----- Ending -----
 st.header("🧬 Final Thoughts")
 st.markdown("""
