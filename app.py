@@ -41,15 +41,21 @@ filtered_df = df[df["Gram_Staining"].isin(gram_options) & df["Genus"].isin(genus
 antibiotic = st.selectbox("Select Antibiotic to Display", ["Penicillin", "Streptomycin", "Neomycin"])
 
 # ----- ECOFF Value -----
+# ----- Antibiotic Thresholds -----
+resistance_cutoffs = {
+    "Penicillin": 2,
+    "Streptomycin": 16,
+    "Neomycin": 8
+}
+
+# ----- ECOFF Value -----
 ecoff_value = 1
+
+# ----- Safe Data -----
+safe_df = filtered_df[filtered_df[antibiotic] > 0]
 
 # ----- Bar Chart -----
 st.header(f"🔬 {antibiotic} Resistance")
-
-# Filter out non-positive values to avoid log scale issues
-# Drop zero or negative MICs if any
-# --- Zoomable Bar Chart with ECOFF line ---
-safe_df = filtered_df[filtered_df[antibiotic] > 0]
 
 bar_chart = alt.Chart(safe_df).mark_bar().encode(
     x=alt.X(f"{antibiotic}:Q", title="MIC (μg/mL, linear scale)"),
@@ -61,14 +67,28 @@ bar_chart = alt.Chart(safe_df).mark_bar().encode(
     height=500
 ).interactive()
 
-rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
+# Black dashed line = ECOFF
+ecoff_line = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
     color='black',
     strokeDash=[5, 5]
 ).encode(
-    x=alt.X("ECOFF:Q")
+    x='ECOFF:Q'
 )
 
-st.altair_chart(bar_chart + rule)
+# Red dashed line = Resistance threshold (only if defined)
+if antibiotic in resistance_cutoffs:
+    red_line = alt.Chart(pd.DataFrame({f"{antibiotic}_res": [resistance_cutoffs[antibiotic]]})).mark_rule(
+        color='red',
+        strokeDash=[5, 5]
+    ).encode(
+        x=alt.X(f"{antibiotic}_res:Q")
+    )
+    full_chart = bar_chart + ecoff_line + red_line
+else:
+    full_chart = bar_chart + ecoff_line
+
+st.altair_chart(full_chart)
+
 
 # --- Heatmap: Filtered by Selected Antibiotic ---
 st.header("🔥 Resistance Heatmap")
