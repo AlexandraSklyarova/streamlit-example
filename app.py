@@ -25,35 +25,53 @@ data = [
 df = pd.DataFrame(data)
 
 # ----- Streamlit Layout -----
-st.title("💊 Antibiotic Resistance Exploration")
+# ----- Chart 1: Penicillin Resistance with Highlights -----
+st.header("🔬 Penicillin Resistance")
 st.markdown("""
-This interactive tool allows you to explore the **resistance levels of different bacteria** to three antibiotics: **Penicillin, Streptomycin, and Neomycin**.
-Use the controls below to filter and compare bacteria by their **Gram stain** and **genus**.
+**Story Insight:** Most bacteria are inhibited by small doses of Penicillin — but some, like *Aerobacter aerogenes*, are dramatically resistant.
 
-Scroll through each section to learn more about the story hidden in the data.
+We've added a label and highlight to emphasize this outlier.
 """)
 
-# ----- Filters -----
-gram_options = st.multiselect("Select Gram Staining Type", df["Gram_Staining"].unique(), default=df["Gram_Staining"].unique())
-genus_options = st.multiselect("Select Bacterial Genus", df["Genus"].unique(), default=df["Genus"].unique())
+highlighted = filtered_df[filtered_df["Bacteria"] == "Aerobacter aerogenes"]
 
-filtered_df = df[df["Gram_Staining"].isin(gram_options) & df["Genus"].isin(genus_options)]
-
-# ----- Chart 1: Penicillin Resistance -----
-st.header("🔬 Penicillin Resistance")
-st.markdown("Which bacteria are most resistant to Penicillin?")
-
-chart1 = alt.Chart(filtered_df).mark_bar().encode(
+base = alt.Chart(filtered_df).mark_bar().encode(
     x=alt.X("Penicillin:Q", title="MIC (Minimum Inhibitory Concentration)"),
     y=alt.Y("Bacteria:N", sort="-x"),
-    color="Gram_Staining:N",
+    color=alt.condition(
+        alt.datum.Bacteria == "Aerobacter aerogenes",
+        alt.value("crimson"),  # highlight
+        alt.Color("Gram_Staining:N")
+    ),
     tooltip=["Bacteria", "Penicillin", "Gram_Staining", "Genus"]
-).properties(
-    width=700,
-    height=400
-).interactive()
+)
 
-st.altair_chart(chart1)
+text = alt.Chart(highlighted).mark_text(
+    align='left',
+    baseline='middle',
+    dx=5,
+    fontSize=12,
+    fontWeight='bold'
+).encode(
+    x="Penicillin:Q",
+    y=alt.Y("Bacteria:N", sort="-x"),
+    text=alt.value("🚨 Extremely Resistant")
+)
+
+rule = alt.Chart(pd.DataFrame({"x": [100]})).mark_rule(
+    strokeDash=[4,4], color='black'
+).encode(
+    x="x:Q"
+)
+
+penicillin_story = (base + text + rule).properties(
+    width=700,
+    height=400,
+    title="Penicillin Resistance (MIC) with Highlighted Outlier"
+)
+
+st.altair_chart(penicillin_story)
+
 
 # ----- Chart 2: Streptomycin vs Neomycin -----
 st.header("🧪 Streptomycin vs Neomycin Resistance")
