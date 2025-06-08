@@ -48,7 +48,7 @@ with col1:
 
 
     rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
-        strokeDash=[5, 5], color='black'
+        strokeDash=[5,5], color='black'
     ).encode(
         x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
     )
