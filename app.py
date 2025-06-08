@@ -54,6 +54,7 @@ df_melted = filtered_df[["Bacteria", selected_antibiotic]].rename(
 
 # Sort bacteria by MIC ascending for nicer x-axis ordering
 df_melted = df_melted.sort_values("MIC", ascending=True)
+bacteria_order = list(df_melted["Bacteria"])
 
 # --- S/I/R thresholds per antibiotic ---
 thresholds_map = {
@@ -66,7 +67,7 @@ thresholds = thresholds_map.get(selected_antibiotic, {})
 
 # --- Bar chart ---
 bars = alt.Chart(df_melted).mark_bar().encode(
-    x=alt.X("Bacteria:N", sort=list(df_melted["Bacteria"]), title="Bacteria"),
+    x=alt.X("Bacteria:N", sort=bacteria_order, title="Bacteria"),
     y=alt.Y("MIC:Q", scale=alt.Scale(type="log"), title="MIC (µg/mL)"),
     color=alt.value("steelblue"),
     tooltip=["Bacteria", "MIC"]
@@ -107,6 +108,33 @@ final_chart = final_chart.configure_axisX(labelAngle=-45)
 st.header(f"🔬 MIC Values for {selected_antibiotic}")
 st.altair_chart(final_chart, use_container_width=True)
 
+# --- Prepare data for heatmap ---
+df_heatmap = filtered_df[["Bacteria", "Penicillin", "Streptomycin", "Neomycin"]].copy()
+
+# Melt for heatmap: Bacteria x Antibiotic x MIC
+df_heatmap_melted = df_heatmap.melt(id_vars=["Bacteria"], 
+                                    value_vars=["Penicillin", "Streptomycin", "Neomycin"],
+                                    var_name="Antibiotic",
+                                    value_name="MIC")
+
+# Order bacteria by MIC for the selected antibiotic to keep consistency
+bacteria_sorted = bacteria_order if bacteria_order else list(df_heatmap["Bacteria"])
+
+# Heatmap
+heatmap = alt.Chart(df_heatmap_melted).mark_rect().encode(
+    x=alt.X("Antibiotic:N", title="Antibiotic"),
+    y=alt.Y("Bacteria:N", sort=bacteria_sorted, title="Bacteria"),
+    color=alt.Color("MIC:Q", scale=alt.Scale(type="log", scheme="reds"), title="MIC (log scale)"),
+    tooltip=["Bacteria", "Antibiotic", "MIC"]
+).properties(
+    width=400,
+    height=400,
+    title="Heatmap of MIC Values for All Antibiotics"
+)
+
+st.header("🌡️ MIC Heatmap Across Antibiotics")
+st.altair_chart(heatmap, use_container_width=True)
+
 # --- Summary Table ---
 st.header("📋 MIC Interpretation Summary")
 
@@ -122,7 +150,6 @@ summary_data = pd.DataFrame({
     ]
 })
 
-# Format as a simple table for Streamlit
 st.dataframe(summary_data)
 
 # --- Final notes ---
