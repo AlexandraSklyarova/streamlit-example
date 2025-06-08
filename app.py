@@ -1,7 +1,6 @@
-import streamlit as st 
-import pandas as pd 
-import altair as alt 
-import numpy as np
+import streamlit as st
+import pandas as pd
+import altair as alt
 
 # ----- Data Setup -----
 data = [
@@ -22,59 +21,61 @@ data = [
     {"Bacteria": "Streptococcus hemolyticus", "Penicillin": 0.001, "Streptomycin": 14, "Neomycin": 10, "Gram_Staining": "positive", "Genus": "Streptococcus"},
     {"Bacteria": "Streptococcus viridans", "Penicillin": 0.005, "Streptomycin": 10, "Neomycin": 40, "Gram_Staining": "positive", "Genus": "Streptococcus"}
 ]
+
 df = pd.DataFrame(data)
 
 # ----- Streamlit Layout -----
-st.title("💊 Antibiotic Resistance Exploration")
+st.title("💊 Antibiotic Resistance Explorer")
+
 st.markdown("""
-This interactive tool allows you to explore the **resistance levels of different bacteria** to three antibiotics: **Penicillin, Streptomycin, and Neomycin**.
-Use the controls below to filter and compare bacteria by their **Gram stain** and **genus**.
+Explore how resistant various bacteria are to **Penicillin**, **Streptomycin**, and **Neomycin**.
+You can filter by **Gram stain** and **bacterial genus**, and compare MIC values.
 """)
 
 # ----- Filters -----
 gram_options = st.multiselect("Select Gram Staining Type", df["Gram_Staining"].unique(), default=df["Gram_Staining"].unique())
 genus_options = st.multiselect("Select Bacterial Genus", df["Genus"].unique(), default=df["Genus"].unique())
-
 filtered_df = df[df["Gram_Staining"].isin(gram_options) & df["Genus"].isin(genus_options)]
 
-# ----- Antibiotic Dropdown -----
+# ----- Antibiotic Selector -----
 antibiotic = st.selectbox("Select Antibiotic to Display", ["Penicillin", "Streptomycin", "Neomycin"])
 
 # ----- ECOFF Value -----
 ecoff_value = 1
 
-# ----- Chart: MIC Bar Plot -----
+# ----- Bar Chart -----
 st.header(f"🔬 {antibiotic} Resistance")
 
-chart = alt.Chart(filtered_df).mark_bar().encode(
-    x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type='log', base=10), title="MIC (μg/mL, log scale)"),
-    y=alt.Y("Bacteria:N", sort="-x"),
-    color="Gram_Staining:N",
-    tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
+bar_chart = alt.Chart(filtered_df).mark_bar().encode(
+    x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type="log", base=10), title="MIC (μg/mL, log scale)"),
+    y=alt.Y("Bacteria:N", sort=f"-x"),
+    color=alt.Color("Gram_Staining:N", title="Gram Stain"),
+    tooltip=["Bacteria", f"{antibiotic}", "Gram_Staining", "Genus"]
 ).properties(
     width=700,
     height=500
 )
 
 rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
-    strokeDash=[5, 5], color='black'
+    color='black',
+    strokeDash=[4, 4]
 ).encode(
-    x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
+    x=alt.X("ECOFF:Q", scale=alt.Scale(type="log", base=10))
 )
 
-st.altair_chart(chart + rule)
+st.altair_chart(bar_chart + rule)
 
 # ----- Heatmap -----
 st.header("🔥 Resistance Heatmap")
-st.markdown("See the antibiotic resistance profile across all bacteria.")
+st.markdown("Overview of MICs across all antibiotics.")
 
 melted = pd.melt(filtered_df, id_vars=["Bacteria"], value_vars=["Penicillin", "Streptomycin", "Neomycin"],
                  var_name="Antibiotic", value_name="MIC")
 
 heatmap = alt.Chart(melted).mark_rect().encode(
-    x=alt.X("Antibiotic:N"),
+    x=alt.X("Antibiotic:N", title="Antibiotic"),
     y=alt.Y("Bacteria:N", sort=alt.EncodingSortField("MIC", op="max", order="descending")),
-    color=alt.Color("MIC:Q", scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
+    color=alt.Color("MIC:Q", scale=alt.Scale(scheme="redyellowgreen", reverse=True)),
     tooltip=["Bacteria", "Antibiotic", "MIC"]
 ).properties(
     width=500,
@@ -86,9 +87,7 @@ st.altair_chart(heatmap)
 # ----- Ending -----
 st.header("🧬 Final Thoughts")
 st.markdown("""
-This dataset reveals dramatic differences in bacterial resistance patterns.
-
-- **Penicillin** has the highest variance in effectiveness — some bacteria are virtually immune.
-- **Gram-positive bacteria** tend to be more sensitive overall.
-- **Genus matters**: *Staphylococcus* species are extremely sensitive to Neomycin.
+- MIC (Minimum Inhibitory Concentration) values vary **dramatically** by antibiotic and bacterial species.
+- A **log scale** helps us better visualize large differences.
+- The **ECOFF** (epidemiological cutoff) helps distinguish wild type vs non-wild type behavior at 1 μg/mL.
 """)
