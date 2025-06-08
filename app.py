@@ -24,10 +24,6 @@ data = [
 
 df = pd.DataFrame(data)
 
-# Add test tube icon URL
-test_tube_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Test_Tube_icon.png/64px-Test_Tube_icon.png"
-df["icon"] = test_tube_url
-
 # ----- Streamlit Layout ----- 
 st.title("💊 Antibiotic Resistance Exploration")
 st.markdown("""
@@ -47,21 +43,29 @@ antibiotic = st.selectbox("Select Antibiotic to Display", ["Penicillin", "Strept
 # ----- ECOFF ----- 
 ecoff_value = 1
 
-# ----- Chart: Resistance with Image -----
+# ----- Chart: Bar with Emoji Overlay -----
 st.header(f"🔬 {antibiotic} Resistance")
 
 col1, col2 = st.columns([4, 2])
 
 with col1:
-    img_chart = alt.Chart(filtered_df).mark_image(
-        width=24,
-        height=40
-    ).encode(
+    base = alt.Chart(filtered_df).encode(
         x=alt.X(f"{antibiotic}:Q", scale=alt.Scale(type='log', base=10), title="MIC (μg/mL, log scale)"),
-        y=alt.Y("Bacteria:N", sort="-x"),
-        url="icon:N",
+        y=alt.Y("Bacteria:N", sort="-x")
+    )
+
+    bars = base.mark_bar(color="teal").encode(
         tooltip=["Bacteria", antibiotic, "Gram_Staining", "Genus"]
-    ).properties(width=700, height=500)
+    )
+
+    emojis = base.mark_text(
+        align='left',
+        baseline='middle',
+        dx=5,
+        fontSize=15
+    ).encode(
+        text=alt.value("🦠")
+    )
 
     rule = alt.Chart(pd.DataFrame({"ECOFF": [ecoff_value]})).mark_rule(
         strokeDash=[5, 5], color='black'
@@ -69,14 +73,15 @@ with col1:
         x=alt.X("ECOFF:Q", scale=alt.Scale(type='log', base=10))
     )
 
-    st.altair_chart(img_chart + rule)
+    st.altair_chart(bars + emojis + rule, use_container_width=True)
 
 with col2:
     st.markdown(f"""
     ### 🧪 How to Read This Chart
 
-    - **Icons** represent each bacterium's MIC for the selected antibiotic.
-    - The **x-axis is log-scaled** to reflect large differences in resistance.
+    - **Bars** represent MIC values (resistance level) for the selected antibiotic.
+    - The **🦠 emoji** helps visually mark each bacterium on the chart.
+    - The **x-axis is log-scaled** to reflect wide resistance ranges.
     - The **dashed line** marks the ECOFF threshold at **{ecoff_value} μg/mL**:
         - Left = **susceptible**
         - Right = **resistant**
