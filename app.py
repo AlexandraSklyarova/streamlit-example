@@ -96,7 +96,7 @@ explanation_df = pd.DataFrame([
     {
         "Line Type": "Black Dashed Line",
         "Value": "ECOFF = 1 μg/mL",
-        "Meaning": "Epidemiological cutoff — separates wild-type from non-wild-type bacteria"
+        "Meaning": "Epidemiological cutoff, means bacteria is senstitive to the medication"
     },
     {
         "Line Type": "Red Dashed Line",
@@ -152,7 +152,7 @@ st.dataframe(df_effective[["Bacteria", "Most_Effective", "Lowest_MIC"]].sort_val
 
 # ----- Ending -----
 # ----- Key Findings Summary -----
-st.header("📈 Key Findings Summary")
+st.header(" Key Findings Summary")
 
 # Identify most resistant bacteria
 max_mic_value = filtered_df[antibiotic].max()
@@ -167,25 +167,18 @@ most_effective_value = avg_mics[most_effective_ab]
 df_grouped = filtered_df.groupby("Gram_Staining")[mic_columns].mean().reset_index()
 df_grouped["Best_Antibiotic"] = df_grouped[mic_columns].idxmin(axis=1)
 
-st.markdown("### 🔬 Most Effective Antibiotic by Gram Stain Group")
+st.markdown("###  Most Effective Antibiotic by Gram Stain Group")
 st.dataframe(df_grouped[["Gram_Staining", "Penicillin", "Streptomycin", "Neomycin", "Best_Antibiotic"]])
 
 
-# Summary Table
-summary_df = pd.DataFrame([
-    {
-        "Category": " Most Resistant Bacteria",
-        "Result": ", ".join(most_resistant_bacteria),
-        "Details": f"{antibiotic} MIC = {max_mic_value} μg/mL"
-    },
-    {
-        "Category": " Most Effective Antibiotic (on average)",
-        "Result": most_effective_ab,
-        "Details": f"Average MIC ≈ {most_effective_value:.2f} μg/mL"
-    },
- 
-    
-])
+
 
 st.table(summary_df)
+
+st.markdown("""
+Conclusion:
+-Neomycin seems to be the most effective, appearing 10 times in the Most Effective Antibiotic Table
+-Streptomycin has the lowest average MICs, but doesn't appear to be the most effective overall
+-Penicillin has incredibly high MIC numbers from Gram Negative bacteria
+""")
 
