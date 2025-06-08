@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
-# ----- Data Setup -----
+# --- Load the Data ---
 data = [
     {"Bacteria": "Aerobacter aerogenes", "Penicillin": 870, "Streptomycin": 1, "Neomycin": 1.6, "Gram_Staining": "negative", "Genus": "other"},
     {"Bacteria": "Bacillus anthracis", "Penicillin": 0.001, "Streptomycin": 0.01, "Neomycin": 0.007, "Gram_Staining": "positive", "Genus": "other"},
@@ -23,6 +23,16 @@ data = [
 ]
 
 df = pd.DataFrame(data)
+
+# Filter based on user selection
+st.sidebar.title("Filters")
+selected_gram = st.sidebar.multiselect("Select Gram Staining", options=df["Gram_Staining"].unique(), default=df["Gram_Staining"].unique())
+selected_genus = st.sidebar.multiselect("Select Genus", options=df["Genus"].unique(), default=df["Genus"].unique())
+
+filtered_df = df[
+    df["Gram_Staining"].isin(selected_gram) & df["Genus"].isin(selected_genus)
+]
+
 
 # ----- Streamlit Layout -----
 # ----- Chart 1: Penicillin Resistance with Highlights -----
