@@ -173,7 +173,7 @@ st.dataframe(df_grouped[["Gram_Staining", "Penicillin", "Streptomycin", "Neomyci
 
 
 
-st.table(summary_df)
+
 
 st.markdown("""
 Conclusion:
